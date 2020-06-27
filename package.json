@@ -1,0 +1,11 @@
+{
+  "name": "com.mattihiltunen.pools",
+  "version": "1.0.0",
+  "displayName": "Object Pools",
+  "description": "Object pools",
+  "unity": "2019.3",
+  "author": {
+    "name": "Matti Hiltunen",
+    "url": "https://www.mattihiltunen.com"
+  }
+}
