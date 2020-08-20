@@ -124,15 +124,27 @@ namespace mtti.Pools
         /// </summary>
         public void Clear()
         {
-            while (_pool.Count > 0)
+            Prune(0);
+        }
+
+        /// <summary>
+        /// If the pool has more than <c>targetCount</c> objects waiting,
+        /// destroy objects until the target count is reached.
+        /// </summary>
+        public int Prune(int targetCount)
+        {
+            if (targetCount < 0) targetCount = 0;
+
+            int prunedCount = 0;
+            while (_pool.Count > targetCount)
             {
                 var obj = _pool.Dequeue();
-                if (obj == null)
-                {
-                    continue;
-                }
+                if (obj == null) continue;
                 UnityEngine.Object.Destroy(obj);
+                prunedCount += 1;
             }
+
+            return prunedCount;
         }
 
         /// <summary>
