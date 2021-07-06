@@ -1,5 +1,5 @@
 /*
-Copyright 2017-2020 Matti Hiltunen
+Copyright 2017-2021 Matti Hiltunen
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace mtti.Pools
@@ -30,11 +28,9 @@ namespace mtti.Pools
     /// <summary>
     /// Object pool for Unity GameObjects.
     /// </summary>
-    public class GameObjectPool
+    public class GameObjectPool : BaseGameObjectPool
     {
         protected GameObject _prefab = null;
-
-        private Queue<GameObject> _pool = new Queue<GameObject>();
 
         private GameObjectPoolDelegate _factoryDelegate;
 
@@ -145,23 +141,6 @@ namespace mtti.Pools
             }
 
             return prunedCount;
-        }
-
-        /// <summary>
-        /// Release a GameObject back into this pool.
-        /// </summary>
-        /// <param name="obj">The GameObject to release.</param>
-        internal void Release(GameObject obj)
-        {
-            obj.SetActive(false);
-
-            var pooledObject = obj.GetComponent<PooledObject>();
-            if (pooledObject != null)
-            {
-                pooledObject.OnReleasedToPool();
-            }
-
-            _pool.Enqueue(obj);
         }
 
         protected virtual GameObject Create()

@@ -28,18 +28,20 @@ namespace mtti.Pools
     }
 
     /// <summary>
-    /// Do not add this component to GameObjects yourself. This is added automatically to all
-    /// GameObjects created with <see cref="mtti.Pools.GameObjectPool"/> to allow them to be
-    /// released back into the same object pool they were created with by caling
-    /// <c>yourGameObject.GetComponent<mtti.Gadgets.PooledObject>().Release()</c>.
+    /// Do not add this component to GameObjects yourself. This is added
+    /// automatically to all GameObjects created by
+    /// <see cref="mtti.Pools.GameObjectPool"/> and
+    /// <see cref="mtti.Pools.AddressablePool" /> to allow them to be released
+    /// back into the same pool that created them.
     /// </summary>
     public class PooledObject : MonoBehaviour
     {
         /// <summary>
-        /// Convenience method for releasing pooled GameObjects. If the object has a PooledObject
-        /// component, it is released using that component. If not, the object is simply destroyed,
-        /// immediately in edit mode and normally using GameObject.Destroy during play mode.
-        /// Calls with a null parameter are ignored.
+        /// Convenience method for releasing pooled GameObjects. If the object
+        /// has a PooledObject component, it is released using that component.
+        /// If not, the object is simply destroyed, immediately in edit mode and
+        /// normally using GameObject.Destroy during play mode. Calls with a
+        /// null parameter are ignored.
         /// </summary>
         public static void Release(GameObject obj)
         {
@@ -78,7 +80,31 @@ namespace mtti.Pools
             Release(component.gameObject);
         }
 
-        internal GameObjectPool Pool;
+        /// <summary>
+        /// Add a PooledObject component to a game object if it doesn't
+        /// already have one.
+        /// </summary>
+        internal static PooledObject AddTo(GameObject obj)
+        {
+            var c = obj.GetComponent<PooledObject>();
+            if (c != null) return c;
+            return obj.AddComponent<PooledObject>();
+        }
+
+        /// <summary>
+        /// Add a PooledObject component to a component's parent game object
+        /// if it doesn't already have one.
+        /// </summary>
+        internal static PooledObject AddTo(Component c)
+        {
+            return AddTo(c.gameObject);
+        }
+
+        public event Action Claimed;
+
+        public event Action Released;
+
+        internal BaseGameObjectPool Pool;
 
         private List<IPooledObjectListener> _listeners = null;
 
@@ -128,32 +154,40 @@ namespace mtti.Pools
         }
 
         /// <summary>
-        /// Raise the released to pool event. Called by <see cref="mtti.Gadgets.GameObjectPool"/>.
+        /// Raise the released to pool event.
         /// </summary>
         internal void OnReleasedToPool()
         {
-            if (_listeners == null)
+            if (Released != null)
             {
-                return;
+                Released();
             }
-            for (int i = 0, count = _listeners.Count; i < count; i++)
+
+            if (_listeners != null)
             {
-                _listeners[i].OnReleasedToPool(this);
+                for (int i = 0, count = _listeners.Count; i < count; i++)
+                {
+                    _listeners[i].OnReleasedToPool(this);
+                }
             }
         }
 
         /// <summary>
-        /// Raise the claimed from pool event. Called by <see cref="mtti.Gadgets.GameObjectPool"/>.
+        /// Raise the claimed from pool event.
         /// </summary>
         internal void OnClaimedFromPool()
         {
-            if (_listeners == null)
+            if (Claimed != null)
             {
-                return;
+                Claimed();
             }
-            for (int i = 0, count = _listeners.Count; i < count; i++)
+
+            if (_listeners != null)
             {
-                _listeners[i].OnClaimedFromPool(this);
+                for (int i = 0, count = _listeners.Count; i < count; i++)
+                {
+                    _listeners[i].OnClaimedFromPool(this);
+                }
             }
         }
     }
