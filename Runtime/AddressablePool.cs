@@ -15,6 +15,9 @@ limitations under the License.
 */
 
 #if USE_ADDRESSABLES
+using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 #if USE_UNITASK
 using Cysharp.Threading.Tasks;
@@ -22,22 +25,21 @@ using Cysharp.Threading.Tasks;
 using System.Threading.Tasks;
 #endif
 
-using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
-
 namespace mtti.Pools
 {
     /// <summary>
     /// A GameObject pool backed by the Addressable Asset System.
     /// </summary>
-    public class AddressablePool : BaseGameObjectPool
+    public abstract class AddressablePool : BaseGameObjectPool
     {
-        private string _address;
-
-        public AddressablePool(string address)
+        public static AddressablePool Create(string address)
         {
-            _address = address;
+            return new AddressAddressablePool(address);
+        }
+
+        public static AddressablePool Create(AssetReference reference)
+        {
+            return new ReferenceAddressablePool(reference);
         }
 
 #if USE_UNITASK
@@ -66,6 +68,10 @@ namespace mtti.Pools
             return obj;
         }
 
+        protected abstract AsyncOperationHandle<GameObject> Instantiate();
+
+        protected abstract void DestroyInstance(GameObject instance);
+
 #if USE_UNITASK
         private async UniTask<GameObject> GetInstance()
 #else
@@ -84,8 +90,7 @@ namespace mtti.Pools
         {
             await UniTask.NextFrame();
 
-            var result = Addressables.InstantiateAsync(_address);
-
+            var result = Instantiate();
             await result.Task;
             if (result.Status != AsyncOperationStatus.Succeeded)
             {
@@ -139,10 +144,7 @@ namespace mtti.Pools
                 var obj = _pool.Dequeue();
                 if (obj == null) continue;
 
-                if (!Addressables.ReleaseInstance(obj))
-                {
-                    UnityEngine.Object.Destroy(obj);
-                }
+                DestroyInstance(obj);
 
                 prunedCount += 1;
             }
