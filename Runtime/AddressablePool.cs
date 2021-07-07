@@ -18,6 +18,7 @@ limitations under the License.
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceLocations;
 
 #if USE_UNITASK
 using Cysharp.Threading.Tasks;
@@ -34,7 +35,12 @@ namespace mtti.Pools
     {
         public static AddressablePool Create(string address)
         {
-            return new AddressAddressablePool(address);
+            return new StringAddressablePool(address);
+        }
+
+        public static AddressablePool Create(IResourceLocation location)
+        {
+            return new LocationAddressablePool(location);
         }
 
         public static AddressablePool Create(AssetReference reference)

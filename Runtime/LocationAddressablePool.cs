@@ -18,30 +18,31 @@ limitations under the License.
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceLocations;
 
 namespace mtti.Pools
 {
     /// <summary>
-    /// An addressable pool which references the source asset by its string
-    /// address.
+    /// An addressable pool which references the source asset by an
+    /// <see cref="UnityEngine.ResourceManagement.ResourceLocations.IResourceLocation" />.
     /// </summary>
     /// <remarks>
     /// You shouldn't need to create these manually. Use
     /// <see cref="mtti.Pools.AddressablePool.Create(string)" />
     /// instead.
     /// </remarks>
-    public class AddressAddressablePool : AddressablePool
+    public class LocationAddressablePool : AddressablePool
     {
-        private string _address;
+        private IResourceLocation _location;
 
-        public AddressAddressablePool(string address)
+        public LocationAddressablePool(IResourceLocation location)
         {
-            _address = address;
+            _location = location;
         }
 
         protected override AsyncOperationHandle<GameObject> Instantiate()
         {
-            return Addressables.InstantiateAsync(_address);
+            return Addressables.InstantiateAsync(_location);
         }
 
         protected override void DestroyInstance(GameObject instance)
