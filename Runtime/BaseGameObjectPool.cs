@@ -23,6 +23,39 @@ namespace mtti.Pools
     {
         protected Queue<GameObject> _pool = new Queue<GameObject>();
 
+        private bool _valid = true;
+
+        public bool IsValid
+        {
+            get
+            {
+                return _valid;
+            }
+        }
+
+        /// <summary>
+        /// Check if the pool is valid and if it isn't, throw a
+        /// <see cref="System.InvalidOperationException"/>.
+        /// </summary>
+        protected void ExpectValidPool()
+        {
+            if (!_valid)
+            {
+                throw new System.InvalidOperationException(
+                    "Invalid object pool"
+                );
+            }
+        }
+
+        /// <summary>
+        /// Mark the pool as invalid, preventing any further use.
+        /// </summary>
+        protected void Invalidate()
+        {
+            ExpectValidPool();
+            _valid = false;
+        }
+
         internal void Release(GameObject obj)
         {
             obj.SetActive(false);

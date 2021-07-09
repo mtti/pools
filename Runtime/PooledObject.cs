@@ -118,10 +118,11 @@ namespace mtti.Pools
             }
 #endif
 
-            if (Pool == null)
+            if (Pool == null || !Pool.IsValid)
             {
                 this.gameObject.SetActive(false);
                 GameObject.Destroy(this.gameObject);
+                Pool = null;
             }
             else
             {

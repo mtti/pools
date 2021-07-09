@@ -54,6 +54,8 @@ namespace mtti.Pools
         public async Task<T> Claim<T>() where T : Component
 #endif
         {
+            ExpectValidPool();
+
             var obj = await Claim();
             if (obj == null) return null;
             return obj.GetComponent<T>();
@@ -65,6 +67,8 @@ namespace mtti.Pools
         public async Task<GameObject> Claim()
 #endif
         {
+            ExpectValidPool();
+
             var obj = await GetInstance();
 
             var pooledObject = PooledObject.AddTo(obj);
@@ -77,6 +81,69 @@ namespace mtti.Pools
         protected abstract AsyncOperationHandle<GameObject> Instantiate();
 
         protected abstract void DestroyInstance(GameObject instance);
+
+        /// <summary>
+        /// Pre-allocate the pool so it has at least <c>minCount</c> instances.
+        /// </summary>
+#if USE_UNITASK
+        public async UniTask<int> Allocate(int minCount)
+#else
+        public async Task<int> Allocate(int minCount)
+#endif
+        {
+            ExpectValidPool();
+
+            int createdCount = 0;
+
+            while (_pool.Count < minCount)
+            {
+                var obj = await CreateNew();
+                _pool.Enqueue(obj);
+                createdCount += 1;
+            }
+
+            return createdCount;
+        }
+
+        /// <summary>
+        /// Destroy all objects currently in the pool.
+        /// </summary>
+        public void Clear()
+        {
+            Prune(0);
+        }
+
+        public int Prune(int maxCount)
+        {
+            ExpectValidPool();
+
+            if (maxCount < 0) maxCount = 0;
+
+            int prunedCount = 0;
+            while (_pool.Count > maxCount)
+            {
+                var obj = _pool.Dequeue();
+                if (obj == null) continue;
+
+                DestroyInstance(obj);
+
+                prunedCount += 1;
+            }
+
+            return prunedCount;
+        }
+
+        /// <summary>
+        /// Destroy all pooled objects and mark the pool as invalid.
+        /// Claimed objects originally created by this pool are not destroyed,
+        /// but will instead be destroyed when they're released.
+        /// </summary>
+        public void Dispose()
+        {
+            if (!IsValid) return;
+            Prune(0);
+            Invalidate();
+        }
 
 #if USE_UNITASK
         private async UniTask<GameObject> GetInstance()
@@ -109,53 +176,6 @@ namespace mtti.Pools
             pooledObject.Pool = this;
 
             return obj;
-        }
-
-        /// <summary>
-        /// Pre-allocate the pool so it has at least <c>minCount</c> instances.
-        /// </summary>
-#if USE_UNITASK
-        public async UniTask<int> Allocate(int minCount)
-#else
-        public async Task<int> Allocate(int minCount)
-#endif
-        {
-            int createdCount = 0;
-
-            while (_pool.Count < minCount)
-            {
-                var obj = await CreateNew();
-                _pool.Enqueue(obj);
-                createdCount += 1;
-            }
-
-            return createdCount;
-        }
-
-        /// <summary>
-        /// Destroy all objects currently in the pool.
-        /// </summary>
-        public void Clear()
-        {
-            Prune(0);
-        }
-
-        public int Prune(int maxCount)
-        {
-            if (maxCount < 0) maxCount = 0;
-
-            int prunedCount = 0;
-            while (_pool.Count > maxCount)
-            {
-                var obj = _pool.Dequeue();
-                if (obj == null) continue;
-
-                DestroyInstance(obj);
-
-                prunedCount += 1;
-            }
-
-            return prunedCount;
         }
 #endif // USE_ADDRESSABLES
     }
