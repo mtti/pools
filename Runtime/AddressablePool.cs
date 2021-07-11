@@ -151,8 +151,18 @@ namespace mtti.Pools
         private async Task<GameObject> GetInstance()
 #endif
         {
-            if (_pool.Count == 0) return await CreateNew();
-            return _pool.Dequeue();
+            GameObject obj = null;
+            while (_pool.Count > 0 && obj == null)
+            {
+                obj = _pool.Dequeue();
+            }
+
+            if (obj == null)
+            {
+                return await CreateNew();
+            }
+
+            return obj;
         }
 
 #if USE_UNITASK
