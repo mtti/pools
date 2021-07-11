@@ -50,6 +50,8 @@ namespace mtti.Pools
                 return;
             }
 
+            obj.SetActive(false);
+
             PooledObject pooledObject = obj.GetComponent<PooledObject>();
             if (pooledObject != null)
             {
