@@ -15,183 +15,55 @@ limitations under the License.
 */
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace mtti.Pools
 {
-    public interface IPooledObjectListener
+    public class PooledObject<T> : IDisposable
+        where T : class, new()
     {
-        void OnReleasedToPool(PooledObject obj);
-
-        void OnClaimedFromPool(PooledObject obj);
-    }
-
-    /// <summary>
-    /// Do not add this component to GameObjects yourself. This is added
-    /// automatically to all GameObjects created by
-    /// <see cref="mtti.Pools.GameObjectPool"/> and
-    /// <see cref="mtti.Pools.AddressablePool" /> to allow them to be released
-    /// back into the same pool that created them.
-    /// </summary>
-    public class PooledObject : MonoBehaviour
-    {
-        /// <summary>
-        /// Convenience method for releasing pooled GameObjects. If the object
-        /// has a PooledObject component, it is released using that component.
-        /// If not, the object is simply destroyed, immediately in edit mode and
-        /// normally using GameObject.Destroy during play mode. Calls with a
-        /// null parameter are ignored.
-        /// </summary>
         public static void Release(GameObject obj)
         {
-            if (obj == null)
-            {
-                return;
-            }
-
-            obj.SetActive(false);
-
-            PooledObject pooledObject = obj.GetComponent<PooledObject>();
-            if (pooledObject != null)
-            {
-                pooledObject.Release();
-                return;
-            }
-
-#if UNITY_EDITOR
-            if (!UnityEditor.EditorApplication.isPlaying)
-            {
-                GameObject.DestroyImmediate(obj);
-                return;
-            }
-#endif
-
-            GameObject.Destroy(obj);
+            PooledGameObject.Release(obj);
         }
 
-        /// <summary>
-        /// Release the parent GameObject of a Unity component.
-        /// </summary>
-        public static void Release(Component component)
+        public static void Release(Component obj)
         {
-            if (component == null)
-            {
-                return;
-            }
-            Release(component.gameObject);
+            PooledGameObject.Release(obj);
         }
 
-        /// <summary>
-        /// Add a PooledObject component to a game object if it doesn't
-        /// already have one.
-        /// </summary>
-        internal static PooledObject AddTo(GameObject obj)
+        public static PooledObject<T> Claim()
         {
-            var c = obj.GetComponent<PooledObject>();
-            if (c != null) return c;
-            return obj.AddComponent<PooledObject>();
+            return Claim(ObjectPool<T>.Instance);
         }
 
-        /// <summary>
-        /// Add a PooledObject component to a component's parent game object
-        /// if it doesn't already have one.
-        /// </summary>
-        internal static PooledObject AddTo(Component c)
+        public static PooledObject<T> Claim(ObjectPool<T> pool)
         {
-            return AddTo(c.gameObject);
+            var value = pool.Claim();
+            var obj = ObjectPool<PooledObject<T>>.Instance.Claim();
+            obj.Initialize(value, pool);
+            return obj;
         }
 
-        public event Action Claimed;
+        protected T _value;
 
-        public event Action Released;
+        private ObjectPool<T> _pool;
 
-        internal BaseGameObjectPool Pool;
-
-        private List<IPooledObjectListener> _listeners = null;
-
-        public void Release()
+        public virtual void Dispose()
         {
-#if UNITY_EDITOR
-            if (!UnityEditor.EditorApplication.isPlaying)
-            {
-                GameObject.DestroyImmediate(this.gameObject);
-                return;
-            }
-#endif
-
-            if (Pool == null || !Pool.IsValid)
-            {
-                this.gameObject.SetActive(false);
-                GameObject.Destroy(this.gameObject);
-                Pool = null;
-            }
-            else
-            {
-                Pool.Release(this.gameObject);
-            }
+            OnDispose();
+            _pool.Release(_value);
+            _value = null;
+            _pool = null;
+            ObjectPool<PooledObject<T>>.Instance.Release(this);
         }
 
-        public void AddListener(IPooledObjectListener listener)
+        protected virtual void OnDispose() { }
+
+        private void Initialize(T value, ObjectPool<T> pool)
         {
-            if (_listeners != null && _listeners.Contains(listener))
-            {
-                return;
-            }
-
-            if (_listeners == null)
-            {
-                _listeners = new List<IPooledObjectListener>();
-            }
-
-            _listeners.Add(listener);
-        }
-
-        public void RemoveListener(IPooledObjectListener listener)
-        {
-            if (_listeners == null || !_listeners.Contains(listener))
-            {
-                return;
-            }
-            _listeners.Remove(listener);
-        }
-
-        /// <summary>
-        /// Raise the released to pool event.
-        /// </summary>
-        internal void OnReleasedToPool()
-        {
-            if (Released != null)
-            {
-                Released();
-            }
-
-            if (_listeners != null)
-            {
-                for (int i = 0, count = _listeners.Count; i < count; i++)
-                {
-                    _listeners[i].OnReleasedToPool(this);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Raise the claimed from pool event.
-        /// </summary>
-        internal void OnClaimedFromPool()
-        {
-            if (Claimed != null)
-            {
-                Claimed();
-            }
-
-            if (_listeners != null)
-            {
-                for (int i = 0, count = _listeners.Count; i < count; i++)
-                {
-                    _listeners[i].OnClaimedFromPool(this);
-                }
-            }
+            _value = value;
+            _pool = pool;
         }
     }
 }

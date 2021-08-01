@@ -38,7 +38,7 @@ namespace mtti.Pools
 
         private void Release()
         {
-            GetComponent<PooledObject>().Release();
+            GetComponent<PooledGameObject>().Release();
         }
 
         private void Awake()

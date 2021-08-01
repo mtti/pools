@@ -60,7 +60,7 @@ namespace mtti.Pools
         {
             obj.SetActive(false);
 
-            var pooledObject = obj.GetComponent<PooledObject>();
+            var pooledObject = obj.GetComponent<PooledGameObject>();
             if (pooledObject != null)
             {
                 pooledObject.OnReleasedToPool();

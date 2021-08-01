@@ -78,24 +78,24 @@ namespace mtti.Pools
                 obj = _pool.Dequeue();
             }
 
-            PooledObject pooledObject;
+            PooledGameObject pooledObject;
 
             // If we don't have a valid GameObject by now, create one.
             if (obj == null)
             {
                 obj = Create();
 
-                pooledObject = obj.GetComponent<PooledObject>();
+                pooledObject = obj.GetComponent<PooledGameObject>();
                 if (pooledObject == null)
                 {
-                    pooledObject = obj.AddComponent<PooledObject>();
+                    pooledObject = obj.AddComponent<PooledGameObject>();
                 }
                 pooledObject.Pool = this;
             }
 
             obj.SetActive(false);
 
-            pooledObject = obj.GetComponent<PooledObject>();
+            pooledObject = obj.GetComponent<PooledGameObject>();
             if (pooledObject != null)
             {
                 pooledObject.OnClaimedFromPool();

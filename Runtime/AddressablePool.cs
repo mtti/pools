@@ -71,7 +71,7 @@ namespace mtti.Pools
 
             var obj = await GetInstance();
 
-            var pooledObject = PooledObject.AddTo(obj);
+            var pooledObject = PooledGameObject.AddTo(obj);
             pooledObject.Pool = this;
             pooledObject.OnClaimedFromPool();
 
@@ -182,7 +182,7 @@ namespace mtti.Pools
 
             var obj = result.Result;
             obj.SetActive(false);
-            var pooledObject = PooledObject.AddTo(obj);
+            var pooledObject = PooledGameObject.AddTo(obj);
             pooledObject.Pool = this;
 
             return obj;
