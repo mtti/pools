@@ -31,6 +31,16 @@ namespace mtti.Pools
     /// </remarks>
     public class PooledList<T> : IDisposable, ICollection<T>
     {
+        public static PooledList<T> Copy(IList<T> source)
+        {
+            var result = Claim();
+            for (int i = 0, count = source.Count; i < count; i++)
+            {
+                result.Add(source[i]);
+            }
+            return result;
+        }
+
         public static PooledList<T> Claim()
         {
             return Claim(ObjectPool<List<T>>.Instance);
