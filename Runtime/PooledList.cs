@@ -19,6 +19,17 @@ using System.Collections.Generic;
 
 namespace mtti.Pools
 {
+    public static class PooledList
+    {
+        /// <summary>
+        /// Claim a pooled list, filling it with values from an existing list.
+        /// </summary>
+        public static PooledList<T> From<T>(IList<T> source)
+        {
+            return PooledList<T>.From(source);
+        }
+    }
+
     /// <summary>
     /// A wrapper around <see cref="System.Collections.Generic.List{T}"/>
     /// which retrieves the list from an object pool and clears it and then
@@ -29,9 +40,9 @@ namespace mtti.Pools
     /// by proxying the calls to the underlying
     /// <see cref="System.Collections.Generic.List{T}"/> instance.
     /// </remarks>
-    public class PooledList<T> : IDisposable, ICollection<T>
+    public class PooledList<T> : IDisposable, IList<T>
     {
-        public static PooledList<T> Copy(IList<T> source)
+        public static PooledList<T> From(IList<T> source)
         {
             var result = Claim();
             for (int i = 0, count = source.Count; i < count; i++)
@@ -63,6 +74,7 @@ namespace mtti.Pools
         public T this[int key]
         {
             get { return _value[key]; }
+            set { _value[key] = value; }
         }
 
         public int Count { get { return _value.Count; } }
@@ -93,6 +105,21 @@ namespace mtti.Pools
         public bool Remove(T value)
         {
             return _value.Remove(value);
+        }
+
+        public int IndexOf(T item)
+        {
+            return _value.IndexOf(item);
+        }
+
+        public void Insert(int index, T item)
+        {
+            _value.Insert(index, item);
+        }
+
+        public void RemoveAt(int index)
+        {
+            _value.RemoveAt(index);
         }
 
         public virtual void Dispose()
