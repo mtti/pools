@@ -19,17 +19,6 @@ using System.Collections.Generic;
 
 namespace mtti.Pools
 {
-    public static class PooledList
-    {
-        /// <summary>
-        /// Claim a pooled list, filling it with values from an existing list.
-        /// </summary>
-        public static PooledList<T> From<T>(IList<T> source)
-        {
-            return PooledList<T>.From(source);
-        }
-    }
-
     /// <summary>
     /// A wrapper around <see cref="System.Collections.Generic.List{T}"/>
     /// which retrieves the list from an object pool and clears it and then
@@ -40,8 +29,10 @@ namespace mtti.Pools
     /// by proxying the calls to the underlying
     /// <see cref="System.Collections.Generic.List{T}"/> instance.
     /// </remarks>
-    public class PooledList<T> : IDisposable, IList<T>
+    public class PooledList<T> : List<T>, IDisposable
     {
+        private static ObjectPool<PooledList<T>> s_pool;
+
         public static PooledList<T> From(IList<T> source)
         {
             var result = Claim();
@@ -54,87 +45,42 @@ namespace mtti.Pools
 
         public static PooledList<T> Claim()
         {
-            return Claim(ObjectPool<List<T>>.Instance);
+            if (s_pool == null) s_pool = new ObjectPool<PooledList<T>>(CreateNew);
+            var list = s_pool.Claim();
+            return list;
         }
 
-        public static PooledList<T> Claim(ObjectPool<List<T>> pool)
+        private static PooledList<T> CreateNew()
         {
-            var value = pool.Claim();
-            var obj = ObjectPool<PooledList<T>>.Instance.Claim();
-            obj.Initialize(value, pool);
-            return obj;
+            var result = new PooledList<T>();
+            return result;
         }
 
-        protected List<T> _value;
+        private byte _version = 0;
 
-        private ObjectPool<List<T>> _pool;
+        /// <summary>
+        /// Pooled object version incremented each time the object is released
+        /// back into its pool (with overflow back to 0). Can be used to check
+        /// that a reference to a pooled object is still valid.
+        /// </summary>
+        public byte Version { get { return _version; } }
 
-        public List<T> Values { get { return _value; } }
-
-        public T this[int key]
+        public void Dispose()
         {
-            get { return _value[key]; }
-            set { _value[key] = value; }
+            unchecked { _version++; }
+            Clear();
+            s_pool.Release(this);
         }
+    }
 
-        public int Count { get { return _value.Count; } }
-
-        public bool IsReadOnly { get { return false; } }
-
-        public void Add(T value) { _value.Add(value); }
-
-        public void Clear() { _value.Clear(); }
-
-        public bool Contains(T value) { return _value.Contains(value); }
-
-        public void CopyTo(T[] array, int arrayIndex)
+    public static class PooledList
+    {
+        /// <summary>
+        /// Claim a pooled list, filling it with values from an existing list.
+        /// </summary>
+        public static PooledList<T> From<T>(IList<T> source)
         {
-            _value.CopyTo(array, arrayIndex);
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return _value.GetEnumerator();
-        }
-
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return _value.GetEnumerator();
-        }
-
-        public bool Remove(T value)
-        {
-            return _value.Remove(value);
-        }
-
-        public int IndexOf(T item)
-        {
-            return _value.IndexOf(item);
-        }
-
-        public void Insert(int index, T item)
-        {
-            _value.Insert(index, item);
-        }
-
-        public void RemoveAt(int index)
-        {
-            _value.RemoveAt(index);
-        }
-
-        public virtual void Dispose()
-        {
-            _value.Clear();
-            _pool.Release(_value);
-            _value = null;
-            _pool = null;
-            ObjectPool<PooledList<T>>.Instance.Release(this);
-        }
-
-        private void Initialize(List<T> value, ObjectPool<List<T>> pool)
-        {
-            _value = value;
-            _pool = pool;
+            return PooledList<T>.From(source);
         }
     }
 }
