@@ -31,7 +31,7 @@ namespace mtti.Pools
     /// </remarks>
     public class PooledList<T> : List<T>, IDisposable
     {
-        private static ObjectPool<PooledList<T>> s_pool;
+        private static DelegateObjectPool<PooledList<T>> s_pool;
 
         public static PooledList<T> From(IList<T> source)
         {
@@ -45,15 +45,18 @@ namespace mtti.Pools
 
         public static PooledList<T> Claim()
         {
-            if (s_pool == null) s_pool = new ObjectPool<PooledList<T>>(CreateNew);
+            if (s_pool == null)
+            {
+                s_pool = new DelegateObjectPool<PooledList<T>>(CreateNew);
+            }
+
             var list = s_pool.Claim();
             return list;
         }
 
         private static PooledList<T> CreateNew()
         {
-            var result = new PooledList<T>();
-            return result;
+            return new PooledList<T>();
         }
 
         private byte _version = 0;
@@ -71,6 +74,8 @@ namespace mtti.Pools
             Clear();
             s_pool.Release(this);
         }
+
+        private PooledList() { }
     }
 
     public static class PooledList
