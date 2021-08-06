@@ -20,14 +20,12 @@ using System.Collections.Generic;
 namespace mtti.Pools
 {
     /// <summary>
-    /// A wrapper around <see cref="System.Collections.Generic.List{T}"/>
-    /// which retrieves the list from an object pool and clears it and then
-    /// returns it to the pool when the <c>PooledList</c> instance is disposed.
+    /// A generic list fetched from an object pool and returned back to it
+    /// when disposed.
     /// </summary>
     /// <remarks>
-    /// Implements <see cref="System.Collections.Generic.ICollection{T}"/>
-    /// by proxying the calls to the underlying
-    /// <see cref="System.Collections.Generic.List{T}"/> instance.
+    /// Not thread safe. Can't be instantiated directly, you must use the
+    /// <see cref="mtti.Pools.PooledList{T}.Claim(int)"/> static method.
     /// </remarks>
     public class PooledList<T> : List<T>, IDisposable
     {
@@ -35,7 +33,7 @@ namespace mtti.Pools
 
         public static PooledList<T> From(IList<T> source)
         {
-            var result = Claim();
+            var result = Claim(source.Count);
             for (int i = 0, count = source.Count; i < count; i++)
             {
                 result.Add(source[i]);
@@ -43,7 +41,10 @@ namespace mtti.Pools
             return result;
         }
 
-        public static PooledList<T> Claim()
+        /// <summary>
+        /// Claim a pooled list with an optional minimum capacity.
+        /// </summary>
+        public static PooledList<T> Claim(int capacity = 0)
         {
             if (s_pool == null)
             {
@@ -51,7 +52,21 @@ namespace mtti.Pools
             }
 
             var list = s_pool.Claim();
+            if (capacity > 0 && list.Capacity < capacity)
+            {
+                list.Capacity = capacity;
+            }
             return list;
+        }
+
+        /// <summary>
+        /// Discard pooled objects until there are no more than
+        /// <c>targetCount</c> remaining.
+        /// </summary>
+        public static int PrunePool(int targetCount)
+        {
+            if (s_pool == null) return 0;
+            return s_pool.Prune(targetCount);
         }
 
         private static PooledList<T> CreateNew()
@@ -68,6 +83,10 @@ namespace mtti.Pools
         /// </summary>
         public byte Version { get { return _version; } }
 
+        /// <summary>
+        /// Clears the list, increments its version number and returns it to
+        /// the object pool.
+        /// </summary>
         public void Dispose()
         {
             unchecked { _version++; }
