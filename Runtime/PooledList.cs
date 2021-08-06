@@ -106,5 +106,20 @@ namespace mtti.Pools
         {
             return PooledList<T>.From(source);
         }
+
+        /// <summary>
+        /// Claim a pooled list populated with the keys of a dictionary.
+        /// </summary>
+        public static PooledList<T> FromKeys<T, TValue>(
+            Dictionary<T, TValue> source
+        )
+        {
+            var list = PooledList<T>.Claim(source.Count);
+            foreach (var item in source)
+            {
+                list.Add(item.Key);
+            }
+            return list;
+        }
     }
 }
