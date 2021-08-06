@@ -21,7 +21,7 @@ namespace mtti.Pools
 {
     /// <summary>
     /// A simple object pool which calls a delegate function to create new
-    /// instances.
+    /// instances. Not thread safe.
     /// </summary>
     public class DelegateObjectPool<T> where T : class
     {
@@ -57,6 +57,24 @@ namespace mtti.Pools
         public void Release(T obj)
         {
             _pool.Enqueue(obj);
+        }
+
+        /// <summary>
+        /// If the pool has more than <c>targetCount</c> objects waiting,
+        /// destroy objects until the target count is reached.
+        /// </summary>
+        public int Prune(int targetCount)
+        {
+            if (targetCount < 0) targetCount = 0;
+
+            int prunedCount = 0;
+            while (_pool.Count > targetCount)
+            {
+                _pool.Dequeue();
+                prunedCount += 1;
+            }
+
+            return prunedCount;
         }
 
         public void Clear()
