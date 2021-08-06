@@ -187,6 +187,6 @@ namespace mtti.Pools
 
             return obj;
         }
-#endif // USE_ADDRESSABLES
     }
 }
+#endif // USE_ADDRESSABLES
