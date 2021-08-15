@@ -14,17 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+using System;
 using UnityEngine;
 
 namespace mtti.Pools
 {
-    public delegate GameObject GameObjectPoolDelegate();
-
-    public interface IGameObjectFactory
-    {
-        GameObject CreateGameObject();
-    }
-
     /// <summary>
     /// Object pool for Unity GameObjects.
     /// </summary>
@@ -32,47 +26,61 @@ namespace mtti.Pools
     {
         protected GameObject _prefab = null;
 
-        private GameObjectPoolDelegate _factoryDelegate;
-
-        private IGameObjectFactory _factoryObject;
+        private Func<GameObject> _factoryDelegate;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="mtti.Gadgets.GameObjectPool"/> class with
-        /// a factory method which will be called every time the pool needs to create a new object.
+        /// Initializes a new instance of the
+        /// <see cref="mtti.Pools.GameObjectPool"/> class with
+        /// a factory method which will be called every time the pool needs to
+        /// create a new object.
         /// </summary>
-        /// <param name="factory">Callback to create new GameObjects when the pool is empty.</param>
-        public GameObjectPool(GameObjectPoolDelegate factory)
+        /// <param name="factory">
+        /// Callback to create new GameObjects when the pool is empty.
+        /// </param>
+        public GameObjectPool(Func<GameObject> factory)
         {
             _factoryDelegate = factory;
         }
 
+        public GameObjectPool(Component component)
+        {
+            if (component == null)
+            {
+                throw new ArgumentNullException("component");
+            }
+
+            _prefab = component.gameObject;
+            _factoryDelegate = InstantiatePrefab;
+        }
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="mtti.Gadgets.GameObjectPool"/> class with
-        /// a prefab, which will be cloned every time the pool needs to create a new object.
+        /// Initializes a new instance of the
+        /// <see cref="mtti.Pools.GameObjectPool"/> class with
+        /// a prefab, which will be cloned every time the pool needs to create
+        /// a new object.
         /// </summary>
         /// <param name="prefab">Prefab.</param>
         public GameObjectPool(GameObject prefab)
         {
+            if (prefab == null)
+            {
+                throw new ArgumentNullException("prefab");
+            }
+
             _prefab = prefab;
             _factoryDelegate = InstantiatePrefab;
         }
 
-        public GameObjectPool(IGameObjectFactory factory)
-        {
-            _factoryObject = factory;
-            _factoryDelegate = InstantiateWithFactory;
-        }
-
         /// <summary>
-        /// Retrieve a GameObject from the pool, or create a new one using the factory delegate if
-        /// the pool is empty.
+        /// Retrieve a GameObject from the pool, or create a new one using
+        /// the factory delegate if the pool is empty.
         /// </summary>
         public GameObject Claim()
         {
             GameObject obj = null;
 
-            // Destroyed GameObjects will equal to null, so keep trying until we get a non-null
-            // object or the pool runs out.
+            // Destroyed GameObjects will equal to null, so keep trying until we
+            // get a non-null object or the pool runs out.
             while (_pool.Count > 0 && obj == null)
             {
                 obj = _pool.Dequeue();
@@ -149,17 +157,13 @@ namespace mtti.Pools
         }
 
         /// <summary>
-        /// Used in place of a user-provided factory method when a prefab is provided instead.
+        /// Used in place of a user-provided factory method when a prefab is
+        /// provided instead.
         /// </summary>
         /// <returns>A copy of the prefab.</returns>
         private GameObject InstantiatePrefab()
         {
             return GameObject.Instantiate(_prefab);
-        }
-
-        private GameObject InstantiateWithFactory()
-        {
-            return _factoryObject.CreateGameObject();
         }
     }
 }
