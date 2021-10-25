@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,6 +22,8 @@ namespace mtti.Pools
 {
     public abstract class BaseGameObjectPool
     {
+        public event Action<GameObject> ObjectReturned;
+
         protected Queue<GameObject> _pool = new Queue<GameObject>();
 
         private bool _valid = true;
@@ -65,6 +68,8 @@ namespace mtti.Pools
             {
                 pooledObject.OnReleasedToPool();
             }
+
+            if (ObjectReturned != null) ObjectReturned(obj);
 
             _pool.Enqueue(obj);
         }
