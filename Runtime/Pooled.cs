@@ -19,8 +19,7 @@ using UnityEngine;
 
 namespace mtti.Pools
 {
-    public class PooledObject<T> : IDisposable
-        where T : class, new()
+    public static class Pooled
     {
         public static void Release(GameObject obj)
         {
@@ -31,39 +30,41 @@ namespace mtti.Pools
         {
             PooledGameObject.Release(obj);
         }
+    }
 
-        public static PooledObject<T> Claim()
+    public class Pooled<T> : IDisposable
+        where T : class, new()
+    {
+        public static Pooled<T> Claim()
         {
-            return Claim(ObjectPool<T>.Instance);
+            return ObjectPool<Pooled<T>>.Instance.Claim();
         }
 
-        public static PooledObject<T> Claim(ObjectPool<T> pool)
+        public static Pooled<T> Claim(out T value)
         {
-            var value = pool.Claim();
-            var obj = ObjectPool<PooledObject<T>>.Instance.Claim();
-            obj.Initialize(value, pool);
-            return obj;
+            var pooled = Claim();
+            value = pooled.Value;
+            return pooled;
         }
 
         protected T _value;
 
-        private ObjectPool<T> _pool;
+        public T Value { get { return _value; } }
 
-        public virtual void Dispose()
+        public Pooled()
         {
-            OnDispose();
-            _pool.Release(_value);
-            _value = null;
-            _pool = null;
-            ObjectPool<PooledObject<T>>.Instance.Release(this);
+            _value = new T();
         }
 
-        protected virtual void OnDispose() { }
-
-        private void Initialize(T value, ObjectPool<T> pool)
+        public void Dispose()
         {
-            _value = value;
-            _pool = pool;
+            OnDispose();
+            ObjectPool<Pooled<T>>.Instance.Release(this);
+        }
+
+        protected virtual void OnDispose()
+        {
+            // Do nothing
         }
     }
 }
