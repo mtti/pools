@@ -34,6 +34,7 @@ namespace mtti.Pools
             _transform.position = position;
             _transform.rotation = Quaternion.LookRotation(direction);
             this.gameObject.SetActive(true);
+            _particleSystem.Play();
         }
 
         private void Release()
@@ -45,11 +46,6 @@ namespace mtti.Pools
         {
             _transform = GetComponent<Transform>();
             _particleSystem = GetComponent<ParticleSystem>();
-        }
-
-        private void Start()
-        {
-            _particleSystem.Play();
         }
 
         private void Update()
